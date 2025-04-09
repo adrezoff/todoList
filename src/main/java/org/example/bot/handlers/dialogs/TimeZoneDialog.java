@@ -37,9 +37,7 @@ public class TimeZoneDialog implements Dialog {
                     zoneId.getId(),
                     getTimeZoneExample(zoneId)
             ));
-        } catch (InvalidParameterException e) {
-            messageSender.sendMessage(chatId, getErrorMsg());
-        } catch (DateTimeException e) {
+        } catch (InvalidParameterException | DateTimeException e) {
             messageSender.sendMessage(chatId, getErrorMsg());
         }
     }

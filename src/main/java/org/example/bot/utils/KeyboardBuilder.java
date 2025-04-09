@@ -53,21 +53,31 @@ public class KeyboardBuilder {
         keyboardMarkup.setKeyboard(keyboard);
         return keyboardMarkup;
     }
-    public static InlineKeyboardMarkup createSkipKeyboard(){
+    public static InlineKeyboardMarkup createTimeKeyboard() {
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
         List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
 
         List<InlineKeyboardButton> row = new ArrayList<>();
         row.add(InlineKeyboardButton.builder()
-                .text("📩 Да")
-                .callbackData("confirm_task:yes")
+                .text("Завтра")
+                .callbackData("time:завтра")
                 .build());
         row.add(InlineKeyboardButton.builder()
-                .text("🗑 Нет")
-                .callbackData("confirm_task:no")
+                .text("Послезавтра")
+                .callbackData("time:послезавтра")
                 .build());
 
         keyboard.add(row);
+        List<InlineKeyboardButton> row1 = new ArrayList<>();
+        row1.add(InlineKeyboardButton.builder()
+                .text("Через 4 дня")
+                .callbackData("time:через 4 дня")
+                .build());
+        row1.add(InlineKeyboardButton.builder()
+                .text("Через 7 дней")
+                .callbackData("time:через 7 дней")
+                .build());
+        keyboard.add(row1);
         keyboardMarkup.setKeyboard(keyboard);
         return keyboardMarkup;
     }

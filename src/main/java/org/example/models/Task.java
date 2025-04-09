@@ -11,7 +11,6 @@ public class Task {
     private LocalDateTime endDate;
     private boolean completed;
 
-    // Геттеры и сеттеры
     public long getId() { return id; }
     public void setId(long id) { this.id = id; }
     public long getUserId() { return userId; }

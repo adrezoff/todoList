@@ -3,6 +3,7 @@ package org.example.bot.handlers;
 import org.example.bot.handlers.commands.*;
 import org.example.bot.handlers.dialogs.*;
 import org.example.bot.utils.MessageSender;
+import org.example.models.Task;
 import org.example.models.User;
 import org.example.repositories.TaskRepository;
 import org.example.repositories.UserRepository;
@@ -32,12 +33,18 @@ public class MessageHandler {
     }
 
     private void registerCommands() {
-        commands.put("/start", new StartCommand());
-        commands.put("/help", new HelpCommand());
-        commands.put("/tasks", new TasksCommand());
-        commands.put("/cancel", new CancelCommand());
-        commands.put("/settimezone", new SetTimeZoneCommand());
-        commands.put("/createtask", new CreateTaskCommand());
+        StartCommand startCommand = new StartCommand();
+        commands.put(startCommand.getName(), startCommand);
+        HelpCommand helpCommand = new HelpCommand();
+        commands.put(helpCommand.getName(), helpCommand);
+        TasksCommand tasksCommand = new TasksCommand();
+        commands.put(tasksCommand.getName(), tasksCommand);
+        CancelCommand cancelCommand = new CancelCommand();
+        commands.put(cancelCommand.getName(), cancelCommand);
+        SetTimeZoneCommand timeZoneCommand = new SetTimeZoneCommand();
+        commands.put(timeZoneCommand.getName(), timeZoneCommand);
+        CreateTaskCommand createTaskCommand = new CreateTaskCommand();
+        commands.put(createTaskCommand.getName(), createTaskCommand);
     }
 
     private void registerDialogs() {
@@ -60,7 +67,6 @@ public class MessageHandler {
             return newUser;
         });
 
-        // Обработка команд
         if (text.startsWith("/")) {
             Command command = commands.get(text.split(" ")[0].toLowerCase());
             if (command != null) {

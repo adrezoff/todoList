@@ -1,5 +1,6 @@
 package org.example.bot.handlers.dialogs;
 
+import org.example.bot.utils.KeyboardBuilder;
 import org.example.bot.utils.MessageSender;
 import org.example.models.User;
 import org.example.repositories.TaskRepository;
@@ -21,6 +22,12 @@ public class TaskDescriptionDialog implements Dialog {
         user.putTempData("newTaskDescription", input);
         user.setState(UserState.AWAITING_TASK_START_DATE);
         userRepository.update(user);
-        messageSender.sendMessage(chatId, "Введите дату начала (в формате ГГГГ-ММ-ДД ЧЧ:ММ):");
+        messageSender.sendMessage(chatId, "Введите дату начала \n\n" +
+                        "Поддерживаемые форматы: \n" +
+                        "dd.MM.yyyy HH:mm\n" +
+                        "d MMMM yyyy\n" +
+                        "завтра/через 6 дней\n" +
+                        "29 мая",
+                KeyboardBuilder.createTimeKeyboard());
     }
 }

@@ -1,6 +1,7 @@
 package org.example.bot.handlers.dialogs;
 
 import org.example.bot.utils.DateTimeParser;
+import org.example.bot.utils.KeyboardBuilder;
 import org.example.bot.utils.MessageSender;
 import org.example.models.User;
 import org.example.repositories.TaskRepository;
@@ -34,10 +35,10 @@ public class TaskStartDateDialog implements Dialog {
             user.putTempData("originalStartDate", startDate);
             user.setState(UserState.AWAITING_TASK_END_DATE);
             userRepository.update(user);
-
             messageSender.sendMessage(chatId, "Дата начала: " +
-                    DateTimeParser.format(startDate) + " (ваш часовой пояс)\n" +
-                    "Введите дату окончания (в том же формате):");
+                            DateTimeParser.format(startDate) + " (ваш часовой пояс)\n" +
+                            "Введите дату окончания (в том же формате):",
+                    KeyboardBuilder.createTimeKeyboard());
         } catch (DateTimeParseException e) {
             messageSender.sendMessage(chatId, "Неверный формат даты. Примеры:\n" +
                     "• 2025-05-01 14:30\n" +

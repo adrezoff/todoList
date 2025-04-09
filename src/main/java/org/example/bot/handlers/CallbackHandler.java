@@ -1,5 +1,7 @@
 package org.example.bot.handlers;
 
+import org.example.bot.utils.DateTimeParser;
+import org.example.bot.utils.KeyboardBuilder;
 import org.example.bot.utils.MessageSender;
 import org.example.bot.utils.UserState;
 import org.example.models.Task;
@@ -10,7 +12,13 @@ import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeParseException;
+import java.util.Locale;
 import java.util.Optional;
+
+import static java.time.format.DateTimeFormatter.ofPattern;
 
 public class CallbackHandler {
     private final MessageSender messageSender;
@@ -43,11 +51,62 @@ public class CallbackHandler {
             handleConfirmYes(data, chatId, messageId, user);
         } else if (data.startsWith("confirm_task:no")){
             handleConfirmNo(data, chatId, messageId, user);
+        } else if (data.startsWith("time:")){
+            handleTime(data, chatId, messageId, user);
         }
     }
+
+    private void handleTime(String data, long chatId, int messageId, User user) throws TelegramApiException {
+        String input = data.split(":")[1];
+
+        if (user.getState().equals(UserState.AWAITING_TASK_START_DATE)) {
+            try {
+                LocalDateTime startDate = DateTimeParser.parse(input);
+
+                ZonedDateTime zonedStartDate = startDate.atZone(user.getTimeZone());
+                LocalDateTime utcStartDate = zonedStartDate.withZoneSameInstant(ZoneId.of("UTC")).toLocalDateTime();
+
+                user.putTempData("newTaskStartDate", utcStartDate);
+                user.putTempData("originalStartDate", startDate);
+                user.setState(UserState.AWAITING_TASK_END_DATE);
+                userRepository.update(user);
+
+                messageSender.sendMessage(chatId, "Дата начала: " +
+                                DateTimeParser.format(startDate) + " (ваш часовой пояс)\n" +
+                                "Введите дату окончания (в том же формате):",
+                        KeyboardBuilder.createTimeKeyboard());
+            } catch (TelegramApiException e) {
+                throw new RuntimeException(e);
+            }
+        } else if (user.getState().equals(UserState.AWAITING_TASK_END_DATE)){
+            LocalDateTime endDate = DateTimeParser.parse(input);
+            LocalDateTime startDate = (LocalDateTime) user.getTempData("originalStartDate");
+
+            ZonedDateTime zonedEndDate = endDate.atZone(user.getTimeZone());
+            LocalDateTime utcEndDate = zonedEndDate.withZoneSameInstant(ZoneId.of("UTC")).toLocalDateTime();
+
+            if (endDate.isBefore(startDate)) {
+                messageSender.sendMessage(chatId, "Дата окончания не может быть раньше даты начала. Попробуйте еще раз:");
+                return;
+            }
+
+            user.putTempData("newTaskEndDate", utcEndDate);
+            userRepository.update(user);
+
+            String taskInfo = String.format(
+                    "Подтвердите создание задачи:\n\nНазвание: %s\nОписание: %s\nНачало: %s\nОкончание: %s",
+                    user.getTempData("newTaskTitle"),
+                    user.getTempData("newTaskDescription"),
+                    startDate.format(ofPattern("d MMMM yyyy HH:mm").withLocale(new Locale("ru"))),
+                    endDate.format(ofPattern("d MMMM yyyy HH:mm").withLocale(new Locale("ru")))
+            );
+
+            messageSender.sendMessage(chatId, taskInfo, KeyboardBuilder.createConfirmKeyboard());
+        }
+    }
+
     private void handleConfirmYes(String data, long chatId, int messageId, User user) throws TelegramApiException {
         try {
-            // Создаем новую задачу на основе временных данных
             Task task = new Task();
             task.setUserId(user.getId());
             task.setTitle((String) user.getTempData("newTaskTitle"));
@@ -56,20 +115,16 @@ public class CallbackHandler {
             task.setEndDate((LocalDateTime) user.getTempData("newTaskEndDate"));
             task.setCompleted(false);
 
-            // Сохраняем задачу в базу данных
             taskRepository.save(task);
 
-            // Очищаем временные данные пользователя
             user.clearTempData();
             user.setState(UserState.IDLE);
             userRepository.update(user);
 
-            // Удаляем сообщение с кнопками и отправляем подтверждение
             messageSender.deleteMessage(chatId, messageId);
             messageSender.sendMessage(chatId, "✅ Задача успешно создана!");
 
         } catch (Exception e) {
-            // В случае ошибки отправляем сообщение об ошибке
             messageSender.sendMessage(chatId, "⚠️ Произошла ошибка при создании задачи. Попробуйте еще раз.");
             throw new TelegramApiException("Failed to confirm task creation", e);
         }
@@ -77,12 +132,10 @@ public class CallbackHandler {
 
     private void handleConfirmNo(String data, long chatId, int messageId, User user) throws TelegramApiException {
         try {
-            // Очищаем временные данные пользователя
             user.clearTempData();
             user.setState(UserState.IDLE);
             userRepository.update(user);
 
-            // Удаляем сообщение с кнопками и отправляем уведомление об отмене
             messageSender.deleteMessage(chatId, messageId);
             messageSender.sendMessage(chatId, "❌ Создание задачи отменено.");
 
@@ -111,20 +164,16 @@ public class CallbackHandler {
 //
 //        Task task = taskOpt.get();
 //
-//        // Проверяем, что задача принадлежит пользователю
 //        if (task.getUserId() != user.getId()) {
 //            messageSender.sendMessage(chatId, "Вы не можете редактировать эту задачу!");
 //            return;
 //        }
 //
-//        // Переводим пользователя в состояние редактирования
 //        user.setState(UserState.EDITING_TASK);
-//
-//        // Сохраняем ID редактируемой задачи во временных данных
+
 //        user.setTempDataJson("{\"editingTaskId\":" + taskId + "}");
 //        userRepository.update(user);
 //
-//        // Отправляем сообщение с запросом новых данных
 //        String message = "Редактирование задачи:\n" +
 //                "Текущий заголовок: " + task.getTitle() + "\n" +
 //                "Текущее описание: " + (task.getDescription() != null ? task.getDescription() : "отсутствует") + "\n\n" +

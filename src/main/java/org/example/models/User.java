@@ -47,7 +47,6 @@ public class User {
     }
     public String getTempDataJson() {
         try {
-            // Создаем копию для сериализации, конвертируя LocalDateTime в строки
             Map<String, Object> serializableMap = new HashMap<>();
             for (Map.Entry<String, Object> entry : tempData.entrySet()) {
                 Object value = entry.getValue();
@@ -66,24 +65,21 @@ public class User {
     public void setTempDataJson(String json) {
         try {
             if (json != null && !json.isEmpty()) {
-                // Десериализуем в промежуточную карту
                 Map<String, Object> rawMap = objectMapper.readValue(
                         json,
                         new TypeReference<HashMap<String, Object>>() {}
                 );
 
-                // Конвертируем строки обратно в LocalDateTime где нужно
                 tempData.clear();
                 for (Map.Entry<String, Object> entry : rawMap.entrySet()) {
                     String key = entry.getKey();
                     Object value = entry.getValue();
 
-                    // Если ключ содержит "Date" и значение строка - пробуем распарсить
                     if (value instanceof String && (key.contains("Date") || key.contains("date"))) {
                         try {
                             tempData.put(key, LocalDateTime.parse((String) value));
                         } catch (Exception e) {
-                            tempData.put(key, value); // Оставляем как строку, если не получилось распарсить
+                            tempData.put(key, value);
                         }
                     } else {
                         tempData.put(key, value);
